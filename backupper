@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# check if folder name is provided
+if [ $# -eq 0 ]; then
+  echo "Error: No folder name provided"
+  exit 1
+fi
+
+# check if folder exists
+if [ ! -d "$1" ]; then
+  echo "Error: Folder $1 does not exist"
+  exit 1
+fi
+
+# create log backup folder and error folder if they don't exist
+mkdir -p /var/backups/logBackupper/logs
+mkdir -p /var/backups/logBackupper/error
+
+# loop through all .log* files in the folder and copy them to the backup folder with timestamp appended
+for file in $1/*.log*; do
+  if [ -f "$file" ]; then
+    filename=$(basename -- "$file")
+    extension="${filename##*.}"
+    filename="${filename%.*}"
+    timestamp=$(date +"%m-%d-%Y")
+    cp "$file" "/var/backups/logBackupper/logs/$filename-$timestamp.$extension"
+    if [ $? -ne 0 ]; then
+      echo "$(date +"%m-%d-%Y %H:%M:%S") Error copying file $file" >> /var/backups/logBackupper/error/error.log
+    else
+      md5=$(md5sum "/var/backups/logBackupper/logs/$filename-$timestamp.$extension" | cut -d' ' -f1)
+      echo "$md5 $file" >> /var/backups/logBackupper/hashed_logs.txt
+    fi
+  fi
+done
+
+echo "Log backup completed successfully"
+
+
+
+
