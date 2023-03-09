@@ -1,0 +1,15 @@
+#!/bin/bash
+
+exec 2>> /tmp/hasher_error.log
+
+echo "Provide directory to be hashed:"
+read USERDIR
+echo "Processing...."
+sleep 3
+
+echo "MD5 hashes of files within $USERDIR" >> hash.log
+for file in $(find $USERDIR -type f)
+do
+    echo $file >> /tmp/hash.log
+    md5sum $file >> /tmp/hash.log
+done    
