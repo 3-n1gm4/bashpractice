@@ -1,0 +1,40 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <folder>"
+  exit 1
+fi
+
+if [ ! -d "$1" ]; then
+  echo "Error: $1 is not a directory"
+  exit 1
+fi
+
+backup_dir="/var/backups/logBackupper/logs"
+hash_file="/var/backups/logBackupper/hashed_logs.txt"
+error_file="/var/backups/logBackupper/error/error.log"
+
+if [ ! -d "$backup_dir" ]; then
+  mkdir -p "$backup_dir"
+fi
+
+if [ ! -d "$(dirname $hash_file)" ]; then
+  mkdir -p "$(dirname $hash_file)"
+fi
+
+if [ ! -d "$(dirname $error_file)" ]; then
+  mkdir -p "$(dirname $error_file)"
+fi
+
+timestamp=$(date +%m-%d-%Y)
+
+find "$1" -name "*.log*" -type f -print0 | while IFS= read -r -d '' file; do
+  base=$(basename "$file")
+  cp "$file" "$backup_dir/${base%.*}-$timestamp.${base##*.}"
+  md5=$(md5sum "$backup_dir/${base%.*}-$timestamp.${base##*.}" | cut -d' ' -f1)
+  echo "$md5 $file" >> "$hash_file"
+done 2>>"$error_file"
+
+if [ -s "$error_file" ]; then
+  echo "Errors occurred during backup. Please see $error_file for details."
+fi
